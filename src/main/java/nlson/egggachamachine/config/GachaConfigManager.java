@@ -3,12 +3,14 @@ package nlson.egggachamachine.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting; // <-- IMPORT THÊM
+import net.minecraft.util.Formatting;
 import nlson.egggachamachine.data.PlayerPityData;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +23,7 @@ public class GachaConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_PATH =
             FabricLoader.getInstance().getConfigDir().resolve("gacha_rewards.json");
-    // default params cho bậc đặc biệt
+
     private static final Map<String, String> SPECIAL_DEFAULT_PARAMS = Map.of(
             "nature", "bashful",
             "hp_iv", "31",
@@ -50,42 +52,45 @@ public class GachaConfigManager {
     public static void load() {
         try {
             if (!Files.exists(CONFIG_PATH)) {
-                RewardConfig defaultConfig = new RewardConfig();
+                try (InputStream bundledConfig = GachaConfigManager.class.getResourceAsStream("/gacha_rewards.json")) {
+                    if (bundledConfig != null) {
+                        Files.copy(bundledConfig, CONFIG_PATH);
+                    } else {
+                        RewardConfig defaultConfig = new RewardConfig();
+                        defaultConfig.rates = new GachaRates();
+                        defaultConfig.rates.legendary_shiny = 0.01f;
+                        defaultConfig.rates.legendary_regular = 0.5f;
+                        defaultConfig.rates.mythic_shiny = 0.05f;
+                        defaultConfig.rates.mythic_regular = 0.5f;
+                        defaultConfig.rates.ub_shiny = 0.01f;
+                        defaultConfig.rates.ub_regular = 0.5f;
+                        defaultConfig.rates.irongreat_shiny = 0.05f;
+                        defaultConfig.rates.irongreat_regular = 0.5f;
+                        defaultConfig.rates.common_shiny = 1.0f;
+                        defaultConfig.rates.jackpot = 0.001f;
 
-                defaultConfig.rates = new GachaRates();
-                defaultConfig.rates.legendary_shiny = 0.01f;
-                defaultConfig.rates.legendary_regular = 0.5f;
-                defaultConfig.rates.mythic_shiny = 0.05f;
-                defaultConfig.rates.mythic_regular = 0.5f;
-                defaultConfig.rates.ub_shiny = 0.01f;
-                defaultConfig.rates.ub_regular = 0.5f;
-                defaultConfig.rates.irongreat_shiny = 0.05f;
-                defaultConfig.rates.irongreat_regular = 0.5f;
-                defaultConfig.rates.common_shiny = 1.0f;
-                defaultConfig.rates.jackpot = 0.001f;
+                        defaultConfig.pity_milestones = new PityMilestones();
+                        defaultConfig.pity_milestones.common_shiny_milestone = 200;
+                        defaultConfig.pity_milestones.irongreat_shiny_milestone = 400;
+                        defaultConfig.pity_milestones.mythic_shiny_milestone = 700;
+                        defaultConfig.pity_milestones.ub_shiny_milestone = 850;
+                        defaultConfig.pity_milestones.legendary_shiny_milestone = 1000;
+                        defaultConfig.pity_milestones.jackpot_shiny_milestone = 1200;
 
-                // Thêm pity milestones mặc định
-                defaultConfig.pity_milestones = new PityMilestones();
-                defaultConfig.pity_milestones.common_shiny_milestone = 200;
-                defaultConfig.pity_milestones.irongreat_shiny_milestone = 400;
-                defaultConfig.pity_milestones.mythic_shiny_milestone = 700;
-                defaultConfig.pity_milestones.ub_shiny_milestone = 850;
-                defaultConfig.pity_milestones.legendary_shiny_milestone = 1000;
-                // Jackpot milestone (optional, can be added in gacha_rewards.json)
-                defaultConfig.pity_milestones.jackpot_shiny_milestone = 1200;
+                        defaultConfig.common = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.legendary_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.legendary_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.mythic_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.mythic_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.irongreat_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.ub_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.irongreat_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
+                        defaultConfig.ub_shiny = List.of("Pidgey", "Zubat", "Magikarp");
 
-                defaultConfig.common = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.legendary_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.legendary_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.mythic_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.mythic_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.irongreat_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.ub_regular = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.irongreat_shiny = List.of("Pidgey", "Rattata", "Zubat", "Magikarp");
-                defaultConfig.ub_shiny = List.of("Pidgey", "Zubat", "Magikarp");
-
-                String json = GSON.toJson(defaultConfig);
-                Files.writeString(CONFIG_PATH, json);
+                        String json = GSON.toJson(defaultConfig);
+                        Files.writeString(CONFIG_PATH, json);
+                    }
+                }
             }
 
             String content = Files.readString(CONFIG_PATH);
@@ -93,7 +98,7 @@ public class GachaConfigManager {
 
             RATES = config.rates;
             if (RATES == null) {
-                throw new RuntimeException("Mục 'rates' bị thiếu trong gacha_rewards.json!");
+                throw new RuntimeException("The 'rates' section is missing from gacha_rewards.json!");
             }
 
             // Treat config rates as percentages (e.g. 0.01 = 0.01%).
@@ -109,10 +114,8 @@ public class GachaConfigManager {
             RATES.jackpot /= 100.0f;
             RATES.common_shiny /= 100.0f;
 
-            // Load pity milestones
             PITY_MILESTONES = config.pity_milestones;
             if (PITY_MILESTONES == null) {
-                // Sử dụng giá trị mặc định nếu không có trong config
                 PITY_MILESTONES = new PityMilestones();
                 PITY_MILESTONES.common_shiny_milestone = 200;
                 PITY_MILESTONES.irongreat_shiny_milestone = 400;
@@ -141,25 +144,38 @@ public class GachaConfigManager {
             COMMON_REWARDS = config.common;
             COMMON_SHINY_REWARDS = config.common;
         } catch (IOException e) {
-            throw new RuntimeException("Không thể load config gacha_rewards.json", e);
+            throw new RuntimeException("Failed to load gacha_rewards.json config", e);
         }
+    }
+
+    private static double getPlayerLuck(ServerPlayerEntity player) {
+        return player.getAttributeValue(EntityAttributes.GENERIC_LUCK);
+    }
+
+    private static float getLuckBonus(ServerPlayerEntity player) {
+        double luck = getPlayerLuck(player);
+        return (float) (luck * 0.02);
+    }
+
+    private static float applyLuckBonus(float baseRate, float luckBonus) {
+        return baseRate + (baseRate * luckBonus);
     }
 
     public static RewardEntry pickRandomReward(Random rand, ServerPlayerEntity player) {
         UUID playerId = player.getUuid();
         int currentPity = PlayerPityData.get(playerId);
 
-        // Kiểm tra pity milestones trước khi roll ngẫu nhiên
         RewardEntry pityReward = checkPityMilestone(currentPity, rand, player);
         if (pityReward != null) {
             return pityReward;
         }
 
-        // Nếu không có pity, thực hiện roll bình thường
-        float roll = rand.nextFloat(); // random 0.0 - 1.0
+        float luckBonus = getLuckBonus(player);
+
+        float roll = rand.nextFloat();
         float cumulativeRate = 0.0f;
 
-        cumulativeRate += RATES.jackpot;
+        cumulativeRate += applyLuckBonus(RATES.jackpot, luckBonus);
         if (roll < cumulativeRate) {
             String name = JACKPOT_REWARDS.get(rand.nextInt(JACKPOT_REWARDS.size()));
             PlayerPityData.increase(playerId);
@@ -168,7 +184,7 @@ public class GachaConfigManager {
         }
 
         // Legendary Shiny
-        cumulativeRate += RATES.legendary_shiny;
+        cumulativeRate += applyLuckBonus(RATES.legendary_shiny, luckBonus);
         if (roll < cumulativeRate) {
             String name = LEGENDARY_SHINY_REWARDS.get(rand.nextInt(LEGENDARY_SHINY_REWARDS.size()));
             PlayerPityData.increase(playerId);
@@ -177,7 +193,7 @@ public class GachaConfigManager {
         }
 
         // Legendary Regular
-        cumulativeRate += RATES.legendary_regular;
+        cumulativeRate += applyLuckBonus(RATES.legendary_regular, luckBonus);
         if (roll < cumulativeRate) {
             String name = LEGENDARY_REGULAR_REWARDS.get(rand.nextInt(LEGENDARY_REGULAR_REWARDS.size()));
             PlayerPityData.increase(playerId);
@@ -185,62 +201,62 @@ public class GachaConfigManager {
             return new RewardEntry(name, Map.of());
         }
 
-        // Mythic Shiny - KHÔNG reset pity
-        cumulativeRate += RATES.mythic_shiny;
+        // Mythic Shiny
+        cumulativeRate += applyLuckBonus(RATES.mythic_shiny, luckBonus);
         if (roll < cumulativeRate) {
             String name = MYTHIC_SHINY_REWARDS.get(rand.nextInt(MYTHIC_SHINY_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "Mythic Shiny", name, false);
             return new RewardEntry(name, SPECIAL_DEFAULT_PARAMS);
         }
 
-        // Mythic Regular - KHÔNG reset pity
-        cumulativeRate += RATES.mythic_regular;
+        // Mythic Regular
+        cumulativeRate += applyLuckBonus(RATES.mythic_regular, luckBonus);
         if (roll < cumulativeRate) {
             String name = MYTHIC_REGULAR_REWARDS.get(rand.nextInt(MYTHIC_REGULAR_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "Mythic", name, false);
             return new RewardEntry(name, Map.of());
         }
 
-        // UB Shiny - KHÔNG reset pity
-        cumulativeRate += RATES.ub_shiny;
+        // UB Shiny
+        cumulativeRate += applyLuckBonus(RATES.ub_shiny, luckBonus);
         if (roll < cumulativeRate) {
             String name = UB_SHINY_REWARDS.get(rand.nextInt(UB_SHINY_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "UB Shiny", name, false);
             return new RewardEntry(name, SPECIAL_DEFAULT_PARAMS);
         }
 
-        // UB Regular - KHÔNG reset pity
-        cumulativeRate += RATES.ub_regular;
+        // UB Regular
+        cumulativeRate += applyLuckBonus(RATES.ub_regular, luckBonus);
         if (roll < cumulativeRate) {
             String name = UB_REGULAR_REWARDS.get(rand.nextInt(UB_REGULAR_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "UB", name, false);
             return new RewardEntry(name, Map.of());
         }
 
-        // Paradox Shiny - KHÔNG reset pity
-        cumulativeRate += RATES.irongreat_shiny;
+        // Paradox Shiny
+        cumulativeRate += applyLuckBonus(RATES.irongreat_shiny, luckBonus);
         if (roll < cumulativeRate) {
             String name = IRONGREAT_SHINY_REWARDS.get(rand.nextInt(IRONGREAT_SHINY_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "Paradox Shiny", name, false);
             return new RewardEntry(name, SPECIAL_DEFAULT_PARAMS);
         }
 
-        // Paradox Regular - KHÔNG reset pity
-        cumulativeRate += RATES.irongreat_regular;
+        // Paradox Regular
+        cumulativeRate += applyLuckBonus(RATES.irongreat_regular, luckBonus);
         if (roll < cumulativeRate) {
             String name = IRONGREAT_REGULAR_REWARDS.get(rand.nextInt(IRONGREAT_REGULAR_REWARDS.size()));
-            PlayerPityData.increase(playerId); // Tăng pity counter
+            PlayerPityData.increase(playerId);
             notifyNonCommon(player, "Paradox", name, false);
             return new RewardEntry(name, Map.of());
         }
 
-        // Common Shiny - KHÔNG reset pity
-        cumulativeRate += RATES.common_shiny;
+        // Common Shiny
+        cumulativeRate += applyLuckBonus(RATES.common_shiny, luckBonus);
         if (roll < cumulativeRate) {
             String name = COMMON_SHINY_REWARDS.get(rand.nextInt(COMMON_SHINY_REWARDS.size()));
             PlayerPityData.increase(playerId); // Tăng pity counter
@@ -248,9 +264,9 @@ public class GachaConfigManager {
             return new RewardEntry(name, SPECIAL_DEFAULT_PARAMS);
         }
 
-        // Common Regular (phần còn lại) - KHÔNG reset pity
+        // Common Regular
         String name = COMMON_REWARDS.get(rand.nextInt(COMMON_REWARDS.size()));
-        PlayerPityData.increase(playerId); // Tăng pity counter cho common
+        PlayerPityData.increase(playerId);
         return new RewardEntry(name, Map.of());
     }
 
@@ -300,9 +316,10 @@ public class GachaConfigManager {
 
     /**
      * Gửi thông báo cho người chơi và toàn server khi họ nhận được phần thưởng không phải loại thường.
-     * @param player Người chơi nhận thưởng
-     * @param tier Bậc của phần thưởng
-     * @param name Tên của phần thưởng
+     *
+     * @param player      Người chơi nhận thưởng
+     * @param tier        Bậc của phần thưởng
+     * @param name        Tên của phần thưởng
      * @param isMilestone Phần thưởng có phải từ mốc pity không
      */
     private static void notifyNonCommon(ServerPlayerEntity player, String tier, String name, boolean isMilestone) {
@@ -340,7 +357,6 @@ public class GachaConfigManager {
             player.getServer().getPlayerManager().broadcast(finalMessage, false);
 
         } catch (Throwable ignored) {
-            // Cố gắng gửi thông báo; bỏ qua lỗi để tránh crash server
         }
     }
 
@@ -367,7 +383,6 @@ public class GachaConfigManager {
         }
     }
 
-    // --- Các class nội bộ không thay đổi ---
     public static class PityMilestones {
         int common_shiny_milestone;
         int irongreat_shiny_milestone;
