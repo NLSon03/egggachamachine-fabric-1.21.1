@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import nlson.egggachamachine.block.ModBlocks;
 import nlson.egggachamachine.block.entity.ModBlockEntities;
+import nlson.egggachamachine.command.LuckCommand;
 import nlson.egggachamachine.command.PityCommand;
 import nlson.egggachamachine.config.GachaConfigManager;
 import nlson.egggachamachine.data.PlayerDataStorage;
@@ -32,6 +33,7 @@ public class EggGachaMachine implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             PityCommand.register(dispatcher);
+            LuckCommand.register(dispatcher,registryAccess);
         });
 
         // Load persisted player data (if any)

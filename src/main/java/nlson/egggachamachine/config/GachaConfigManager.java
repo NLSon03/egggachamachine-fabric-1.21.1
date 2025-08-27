@@ -46,8 +46,8 @@ public class GachaConfigManager {
     private static List<String> COMMON_REWARDS;
     private static List<String> COMMON_SHINY_REWARDS;
     private static GachaRates RATES;
-    // Pity system milestones
     private static PityMilestones PITY_MILESTONES;
+    private static float LUCK_MULTIPLIER;
 
     public static void load() {
         try {
@@ -57,6 +57,8 @@ public class GachaConfigManager {
                         Files.copy(bundledConfig, CONFIG_PATH);
                     } else {
                         RewardConfig defaultConfig = new RewardConfig();
+
+                        defaultConfig.luck_multiplier = 0.05f;
                         defaultConfig.rates = new GachaRates();
                         defaultConfig.rates.legendary_shiny = 0.01f;
                         defaultConfig.rates.legendary_regular = 0.5f;
@@ -96,6 +98,7 @@ public class GachaConfigManager {
             String content = Files.readString(CONFIG_PATH);
             RewardConfig config = GSON.fromJson(content, RewardConfig.class);
 
+            LUCK_MULTIPLIER = config.luck_multiplier;
             RATES = config.rates;
             if (RATES == null) {
                 throw new RuntimeException("The 'rates' section is missing from gacha_rewards.json!");
@@ -148,13 +151,13 @@ public class GachaConfigManager {
         }
     }
 
-    private static double getPlayerLuck(ServerPlayerEntity player) {
+    public static double getPlayerLuck(ServerPlayerEntity player) {
         return player.getAttributeValue(EntityAttributes.GENERIC_LUCK);
     }
 
     private static float getLuckBonus(ServerPlayerEntity player) {
         double luck = getPlayerLuck(player);
-        return (float) (luck * 0.02);
+        return (float) (luck * LUCK_MULTIPLIER);
     }
 
     private static float applyLuckBonus(float baseRate, float luckBonus) {
@@ -407,6 +410,7 @@ public class GachaConfigManager {
     }
 
     public static class RewardConfig {
+        float luck_multiplier = 0.05f;
         GachaRates rates;
         PityMilestones pity_milestones;
         List<String> jackpot;

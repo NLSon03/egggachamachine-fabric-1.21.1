@@ -1,4 +1,5 @@
 {
+  "luck_multiplier": 0.05,
   "rates": {
     "jackpot": 0.001,
     "legendary_shiny": 0.02,
